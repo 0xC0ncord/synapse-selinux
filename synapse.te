@@ -1,0 +1,164 @@
+policy_module(synapse, 1.0)
+
+gen_require(`
+    type net_conf_t;
+    type cert_t;
+    type proc_t;
+')
+
+########################################
+#
+# Declarations
+#
+
+## <desc>
+##  <p>
+##  Determine whether Synapse bind to any HTTP port.
+##  </p>
+## </desc>
+gen_tunable(synapse_tcp_allow_bind_http_port, false)
+
+## <desc>
+##  <p>
+##  Determine whether Synapse bind to any HTTP cache port.
+##  </p>
+## </desc>
+gen_tunable(synapse_tcp_allow_bind_http_cache_port, false)
+
+## <desc>
+##  <p>
+##  Determine whether Synapse is allowed to federate
+##  (bind all UDP ports and connect to all TCP ports).
+##  </p>
+## </desc>
+gen_tunable(synapse_allow_federation, true)
+
+type synapse_t;
+type synapse_exec_t;
+application_executable_file(synapse_exec_t)
+init_daemon_domain(synapse_t, synapse_exec_t)
+
+type synapse_initrc_exec_t;
+init_script_file(synapse_initrc_exec_t);
+
+type synapse_conf_t;
+files_config_file(synapse_conf_t);
+
+type synapse_var_lib_t;
+files_type(synapse_var_lib_t)
+
+type synapse_log_t;
+logging_log_file(synapse_log_t)
+
+type synapse_runtime_t alias synapse_var_run_t;
+files_pid_file(synapse_runtime_t)
+
+type synapse_tmp_t;
+files_tmp_file(synapse_tmp_t)
+
+type synapse_http_port_t;
+corenet_port(synapse_http_port_t)
+
+########################################
+#
+# Local policy
+#
+
+allow synapse_t proc_t:file { read open };
+
+allow synapse_t self:process { getsched setsched signal_perms };
+allow synapse_t self:capability { kill dac_read_search dac_override };
+allow synapse_t self:fifo_file rw_fifo_file_perms;
+allow synapse_t self:tcp_socket all_tcp_socket_perms;
+allow synapse_t self:udp_socket all_udp_socket_perms;
+allow synapse_t synapse_http_port_t:tcp_socket { name_bind name_connect };
+allow synapse_t synapse_http_port_t:udp_socket { name_bind };
+
+allow synapse_t self:unix_dgram_socket create_socket_perms;
+allow synapse_t self:unix_stream_socket create_stream_socket_perms;
+allow synapse_t self:netlink_route_socket all_netlink_route_socket_perms;
+
+corenet_tcp_bind_generic_node(synapse_t)
+corenet_udp_bind_generic_node(synapse_t)
+
+corenet_tcp_connect_http_port(synapse_t)
+
+corenet_sendrecv_http_cache_client_packets(synapse_t)
+corenet_tcp_connect_http_cache_port(synapse_t)
+
+postgresql_stream_connect(synapse_t)
+postgresql_tcp_connect(synapse_t)
+
+fs_getattr_xattr_fs(synapse_t)
+kernel_read_vm_overcommit_sysctl(synapse_t)
+
+libs_exec_ldconfig(synapse_t)
+corecmd_exec_bin(synapse_t)
+corecmd_exec_shell(synapse_t)
+miscfiles_read_localization(synapse_t)
+# read /proc/cpuinfo
+kernel_read_system_state(synapse_t)
+
+auth_use_nsswitch(synapse_t)
+
+read_files_pattern(synapse_t, net_conf_t, net_conf_t)
+list_dirs_pattern(synapse_t, cert_t, cert_t)
+read_files_pattern(synapse_t, cert_t, cert_t)
+read_lnk_files_pattern(synapse_t, cert_t, cert_t)
+
+list_dirs_pattern(initrc_t, synapse_conf_t, synapse_conf_t)
+read_files_pattern(initrc_t, synapse_conf_t, synapse_conf_t)
+read_lnk_files_pattern(initrc_t, synapse_conf_t, synapse_conf_t)
+
+list_dirs_pattern(synapse_t, synapse_conf_t, synapse_conf_t)
+read_files_pattern(synapse_t, synapse_conf_t, synapse_conf_t)
+read_lnk_files_pattern(synapse_t, synapse_conf_t, synapse_conf_t)
+
+files_search_var_lib(synapse_t)
+allow synapse_t var_lib_t:dir { getattr };
+manage_dirs_pattern(synapse_t, synapse_var_lib_t, synapse_var_lib_t)
+manage_files_pattern(synapse_t, synapse_var_lib_t, synapse_var_lib_t)
+search_dirs_pattern(synapse_t, synapse_var_lib_t, synapse_var_lib_t)
+allow synapse_t synapse_var_lib_t:file { map };
+
+allow synapse_t synapse_log_t:dir { setattr_dir_perms remove_name };
+append_files_pattern(synapse_t, synapse_log_t, synapse_log_t)
+create_files_pattern(synapse_t, synapse_log_t, synapse_log_t)
+setattr_files_pattern(synapse_t, synapse_log_t, synapse_log_t)
+logging_log_filetrans(synapse_t, synapse_log_t, { dir file })
+logging_send_syslog_msg(synapse_t)
+allow synapse_t synapse_log_t:file { unlink rename };
+
+fs_search_tmpfs(synapse_t)
+files_manage_generic_tmp_dirs(synapse_t)
+files_manage_generic_tmp_files(synapse_t)
+manage_dirs_pattern(synapse_t, synapse_tmp_t, synapse_tmp_t)
+manage_files_pattern(synapse_t, synapse_tmp_t, synapse_tmp_t)
+files_tmp_filetrans(synapse_t, synapse_tmp_t, { file dir })
+allow synapse_t synapse_tmp_t:file { map execute };
+
+files_search_pids(synapse_t)
+files_pid_filetrans(synapse_t, synapse_runtime_t, { dir file })
+manage_dirs_pattern(synapse_t, synapse_runtime_t, synapse_runtime_t)
+manage_files_pattern(synapse_t, synapse_runtime_t, synapse_runtime_t)
+
+userdom_dontaudit_search_user_home_dirs(synapse_t)
+
+# https://cffi.readthedocs.io/en/latest/using.html#callbacks
+allow synapse_t self:process { execmem };
+
+tunable_policy(`synapse_tcp_allow_bind_http_port',`
+    corenet_tcp_bind_http_port(synapse_t)
+')
+
+tunable_policy(`synapse_tcp_allow_bind_http_cache_port',`
+    corenet_tcp_bind_http_cache_port(synapse_t)
+')
+
+tunable_policy(`synapse_allow_federation',`
+    corenet_udp_bind_all_ports(synapse_t)
+    corenet_tcp_connect_all_ports(synapse_t)
+',`
+    corenet_dontaudit_udp_bind_all_ports(synapse_t)
+    corenet_dontaudit_tcp_connect_all_ports(synapse_t)
+')

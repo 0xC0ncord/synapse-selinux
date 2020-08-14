@@ -1,0 +1,109 @@
+## <summary>Policy controlling access to the Synapse Matrix homeserver</summary>
+## <required val="false">
+##  Contains optional interfaces for controlling access to Synapse data.
+## </required>
+#
+########################################
+## <summary>
+##  Allow search access of Synapse lib data.
+## </summary>
+## <desc>
+##  <p>
+##  Allow search access of Synapse lib data.
+##  </p>
+## </desc>
+## <param name="domain">
+##  <summary>
+##  Type to be allowed search access of Synapse lib data.
+##  </summary>
+## </param>
+#
+interface(`synapse_search_lib',`
+    gen_require(`
+        type synapse_var_lib_t;
+    ')
+
+    files_search_var_lib($1)
+    allow $1 synapse_var_lib_t:dir search_dir_perms;
+')
+
+########################################
+## <summary>
+##  Allow read access to Synapse lib data.
+## </summary>
+## <desc>
+##  <p>
+##  Allow read access to Synapse lib data.
+##  </p>
+## </desc>
+## <param name="domain">
+##  <summary>
+##  Type to be allowed read access to Synapse lib data.
+##  </summary>
+## </param>
+#
+interface(`synapse_read_lib_files',`
+    gen_require(`
+        type synapse_var_lib_t;
+    ')
+
+    allow $1 synapse_var_lib_t:file read_file_perms;
+')
+
+########################################
+## <summary>
+##  Allow read access to Synapse logs.
+## </summary>
+## <desc>
+##  <p>
+##  Allow read access to Synapse logs.
+##  </p>
+## </desc>
+## <param name="domain">
+##  <summary>
+##  Type to be allowed read access to Synapse logs.
+##  </summary>
+## </param>
+#
+interface(`synapse_read_log_files',`
+    gen_require(`
+        type synapse_log_t;
+    ')
+
+    allow $1 synapse_log_t:file read_file_perms;
+')
+
+########################################
+## <summary>
+##  All of the rules required to
+##  administrate a Synapse environment.
+## </summary>
+## <param name="domain">
+##  <summary>
+##  Domain allowed access.
+##  </summary>
+## </param>
+## <param name="role">
+##  <summary>
+##  Role allowed access.
+##  </summary>
+## </param>
+## <rolecap/>
+#
+interface(`synapse_admin',`
+    gen_require(`
+        type synapse_t, synapse_initrc_exec_t, synapse_log_t;
+        type synapse_runtime_t;
+    ')
+
+    init_startstop_service($1, $2, synapse_t, synapse_initrc_exec_t)
+
+    allow $1 synapse_t:process { ptrace signal_perms };
+    ps_process_pattern($1, synapse_t)
+
+    logging_search_logs($1)
+    admin_pattern($1, synapse_log_t)
+
+    files_search_pids($1)
+    admin_pattern($1, synapse_runtime_t)
+')

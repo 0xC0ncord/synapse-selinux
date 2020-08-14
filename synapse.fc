@@ -1,0 +1,7 @@
+/etc/rc\.d/init\.d/synapse               -- gen_context(system_u:object_r:synapse_initrc_exec_t,s0)
+/usr/bin/synctl                          -s gen_context(system_u:object_r:synapse_exec_t,s0)
+/usr/lib/python-exec/python[0-9]\.[0-9]/synctl    -- gen_context(system_u:object_r:synapse_exec_t,s0)
+/var/lib/synapse(/.*)?                      gen_context(system_u:object_r:synapse_var_lib_t,s0)
+/var/lib/synapse/homeserver\.yaml        -- gen_context(system_u:object_r:synapse_conf_t,s0)
+/var/log/synapse(/.*)?                      gen_context(system_u:object_r:synapse_log_t,s0)
+/run/synapse(/.*)?                          gen_context(system_u:object_r:synapse_runtime_t,s0)
