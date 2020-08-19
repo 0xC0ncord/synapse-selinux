@@ -13,17 +13,24 @@ gen_require(`
 
 ## <desc>
 ##  <p>
-##  Determine whether Synapse bind to any HTTP port.
+##  Determine whether Synapse can bind to any HTTP port.
 ##  </p>
 ## </desc>
 gen_tunable(synapse_tcp_allow_bind_http_port, false)
 
 ## <desc>
 ##  <p>
-##  Determine whether Synapse bind to any HTTP cache port.
+##  Determine whether Synapse can bind to any HTTP cache port.
 ##  </p>
 ## </desc>
 gen_tunable(synapse_tcp_allow_bind_http_cache_port, false)
+
+## <desc>
+##  <p>
+##  Determine whether Synapse can connect to the Postgres database.
+##  </p>
+## </desc>
+gen_tunable(synapse_postgresql_connect, false)
 
 ## <desc>
 ##  <p>
@@ -85,9 +92,6 @@ corenet_tcp_connect_http_port(synapse_t)
 
 corenet_sendrecv_http_cache_client_packets(synapse_t)
 corenet_tcp_connect_http_cache_port(synapse_t)
-
-postgresql_stream_connect(synapse_t)
-postgresql_tcp_connect(synapse_t)
 
 fs_getattr_xattr_fs(synapse_t)
 kernel_read_vm_overcommit_sysctl(synapse_t)
@@ -153,6 +157,11 @@ tunable_policy(`synapse_tcp_allow_bind_http_port',`
 
 tunable_policy(`synapse_tcp_allow_bind_http_cache_port',`
     corenet_tcp_bind_http_cache_port(synapse_t)
+')
+
+tunable_policy(`synapse_postgresql_connect',`
+    postgresql_stream_connect(synapse_t)
+    postgresql_tcp_connect(synapse_t)
 ')
 
 tunable_policy(`synapse_allow_federation',`
