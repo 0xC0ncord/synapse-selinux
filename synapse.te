@@ -1,4 +1,4 @@
-policy_module(synapse, 1.0)
+policy_module(synapse, 1.0.0)
 
 gen_require(`
     type net_conf_t;
