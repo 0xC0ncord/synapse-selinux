@@ -20,20 +20,22 @@ make -f /usr/share/selinux/<policy_type>/include/Makefile
 # Install the SELinux policy module
 semodile -i synapse.pp
 
-# Set up port
+# Set up port (depending on your configuration)
 setsebool -P synapse_tcp_allow_bind_http_port on
 # OR
 setsebool -P synapse_tcp_allow_bind_http_cache_port on
 # OR
 semanage port -a -t synapse_port_t -p tcp 8010
-# depending on your configuration...
+
+# Allow postgresql connections (if using psql as a backend)
+setsebool -P synapse_postgresql_connect on
 
 # Restore all correct context labels
 restorecon -RvF /var/lib/synapse
 restorecon -vF /etc/init.d/synapse
 # Make sure to run this against the correct Python version(s)
 restorecon -vF /usr/lib/python-exec/python3.6/synctl
-restorecon -Rv /var/log/synapse
+restorecon -RvF /var/log/synapse
 restorecon -RvF /run/synapse
 
 # Start synapse
